@@ -1,0 +1,343 @@
+/*
+*
+* Package: bingo 
+* It defines all structures for building a sesssion for a team.
+*
+*/ 
+package  main
+
+import  (
+	"log"
+	"fmt"
+	"sync"
+	"math/rand"
+	"sort"
+	"time"
+)
+
+//
+// defined bingo sheet dimentions 5X5
+//
+const (
+	SHEET_DIM = 5
+)
+
+//
+// Defined a sheet with colxrow
+//
+type BingoSheet struct {
+	sheet [][]int
+	totalMatchNeeded int
+	drawMatchCount  int
+	oneColMatch  bool
+	oneRowMatch  bool
+	oneDiagonalMatch  bool
+	fullHouseMatch  bool
+}
+
+type BingoGame struct {
+	gameId string
+	players   map[string]*BingoSheet
+        draws []int
+	drawCount int
+	winnerOneCol  bool
+	winnerOneRow  bool
+	winnerOneDiagonal  bool
+	winnerFullHouse  bool
+}
+
+type BingoSessions struct {
+	activeSessions  map[string]*BingoGame
+}
+
+var  games *BingoSessions
+var  gamesLock sync.Mutex
+
+func NewBingoGame(gameId string) (*BingoGame, error) {
+	bGame := BingoGame{ gameId: gameId, 
+	                    players: make(map[string]*BingoSheet), 
+			    draws: make([]int, 100), 
+		            drawCount: 0,
+			    winnerOneCol: false,
+			    winnerOneRow: false,
+			    winnerOneDiagonal: false,
+			    winnerFullHouse: false, }
+	return &bGame,  nil
+}
+
+func NewBingoSheet() (*BingoSheet, error) {
+	bingoSheet := BingoSheet{ sheet: make([][]int, SHEET_DIM), }
+	for i, _ := range bingoSheet.sheet {
+		rows := make([]int, SHEET_DIM)
+		bingoSheet.sheet[i] = rows
+	}
+	return &bingoSheet, nil
+}
+
+func  FindBingoSession(gameId string) (*BingoGame, error) {
+	if gameId == "" {
+		return nil, fmt.Errorf("couldn't find bingo session for nil gameId.")
+	}
+
+	if b, ok := games.activeSessions[gameId]; ok {
+		return  b, nil
+	}
+
+	return nil, fmt.Errorf("couldn't find bingo sesssion, probably session for gameId is not active %v", gameId)
+}
+
+func (b *BingoGame) AddPlayer(player string) (*BingoSheet, error) {
+	if player == "" {
+		return nil, fmt.Errorf("couldn't add the nil player", player)
+	}
+
+	gamesLock.Lock()
+	defer gamesLock.Unlock()
+
+	aSheet, _ := NewBingoSheet()
+	aSheet.populateSheet()
+
+	b.players[player] = aSheet
+
+	log.Printf("%v: added new player", b.gameId, player)
+
+	return aSheet, nil
+}
+
+func (s *BingoSheet) populateSheet() {
+	for i, col := range s.sheet {
+		for  j,_ := range col {
+			s.sheet[i][j] = uniqRandNumber(col, i)
+			s.totalMatchNeeded += 1
+		}
+		sort.Ints(s.sheet[i])
+		if  i ==  2 {
+			// Wildcard the center location
+			s.sheet[i][2] = -1
+			s.totalMatchNeeded -= 1
+		} else {
+			// Wildcard the random location
+			genIn <- 5
+			r := <- genOut
+			if r != 0 {
+				s.sheet[i][r] = -1
+				s.totalMatchNeeded -= 1
+			}
+		}
+	}
+}
+
+func (s *BingoSheet) findMatch(draw int) bool {
+	for i, col := range s.sheet {
+		for  j,_ := range col {
+			if s.sheet[i][j] == draw {
+				s.drawMatchCount += 1
+			}
+		}
+	}
+	if s.drawMatchCount == s.totalMatchNeeded {
+		s.fullHouseMatch = true
+		return true
+	}
+	return false
+}
+
+func uniqRandNumber(aCol []int, idx int) int {
+	min := idx * 20
+	max := (idx+1) * 20
+	for {
+		genIn <- max - min
+		r := <- genOut + min
+		if r == 0  {
+			continue
+		}
+		duplicate := false
+		for _, v := range aCol {
+			if v == r {
+				duplicate = true
+				break
+			}
+		}
+		if  duplicate {
+			continue
+		}
+		return r
+	}
+}
+
+
+func DrawUniqRandNumber(draws []int) int {
+	for {
+		genIn <- 100
+		r := <- genOut
+		if r == 0  {
+			continue
+		}
+		duplicate := false
+		for _, v := range draws {
+			if v == r {
+				duplicate = true
+				break
+			}
+		}
+		if  duplicate {
+			continue
+		}
+		return r
+	}
+}
+
+var gotWinner chan string
+
+func (b *BingoGame) Play(dChan chan int) {
+	for b.drawCount = 0; b.drawCount < 100; b.drawCount++ {
+		b.draws[b.drawCount] = DrawUniqRandNumber(b.draws)
+		dChan <- b.draws[b.drawCount]
+		for player := range b.players {
+			if b.players[player].findMatch(b.draws[b.drawCount])  {
+				gotWinner <- player
+				close(gotWinner)
+				return
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func init() {
+	gotWinner = make(chan string, 1)
+	genIn = make(chan int)
+	genOut = make(chan int)
+}
+
+func main() {
+	bGame, err := NewBingoGame("Test1")
+	if err != nil {
+		log.Fatalf("couldn't create a new bingo session for gameId %v, err: %v\n", "Test1", err)
+	}
+
+	go generateRandomNumber()
+
+	players := []string{ "A", "B", "C" }
+
+	for _, player := range players {
+		aSheet, err := bGame.AddPlayer(player)
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println(aSheet)
+	}
+
+	dChan := make (chan int, 100)
+
+	go bGame.Play(dChan)
+
+	var winner string
+
+	for  {
+		select {
+		case dNum := <- dChan:
+			fmt.Print(dNum, " ")
+		case player := <- gotWinner:
+			fmt.Println("Got Winner: ", player)
+			winner = player
+			break
+		}
+		if winner != "" {
+			break
+		}
+	}
+	genIn <- -1
+	if ok := TestWinner(bGame, winner); ok {
+		log.Println("Test PASS... winner is",  winner)
+		return
+	}
+	log.Println("Test FAIL... winner is",  winner)
+}
+
+var genIn, genOut chan int
+
+func generateRandomNumber() {
+	runGenRand := func(c chan int, id int) {
+		rand.Seed(time.Now().Unix() + int64(id*9999999))
+		for g := range  genIn {
+			if g == -1 {
+				c <- g
+				return 
+			}
+			c <- rand.Intn(g)
+		}
+	}
+	c1 := make(chan int)
+	go runGenRand(c1, 1) 
+	c2 := make(chan int)
+	go runGenRand(c2, 2) 
+	c3 := make(chan int)
+	go runGenRand(c3, 3) 
+	var x int 
+	for {
+		select {
+			case x = <- c1:
+			case x = <- c2:
+			case x = <- c3:
+		}
+		if x == -1 {
+			return
+		}
+		genOut <- x
+	}
+}
+
+func matchesIn(draws []int, val int) bool {
+	for _, v := range draws {
+		if v == val {
+			fmt.Print(val, " ")
+			return true
+		}
+	}
+	return false
+}
+
+func TestWinner(b *BingoGame, winner string) bool {
+	winningSheet := b.players[winner]
+	for _, col := range winningSheet.sheet {
+		for _, val := range col {
+			if val == -1 {
+				continue
+			}
+			if  !matchesIn(b.draws, val) {
+				return false
+			}
+		}
+	}
+
+	fmt.Println("Start checking for all other players....")
+	allWinners := make([]string, 0)
+
+	for player,bSheet := range b.players {
+		fmt.Println("Lets look for player: ", player)
+		matchFound := true
+		for _, col := range bSheet.sheet {
+			for _, val := range col {
+				if val == -1 {
+					continue
+				}
+				if  !matchesIn(b.draws, val) {
+					matchFound = false
+					break
+				}
+			}
+			if !matchFound {
+				break
+			}
+		}
+		if !matchFound {
+			fmt.Println("No full match for player: ", player)
+		} else {
+			fmt.Println("Found winner: ", player)
+			allWinners = append(allWinners, player)
+		}
+	}
+	fmt.Println("All winners:", allWinners)
+	return true
+}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<header>
+		<title> Bingo: Welcome Admin</title>
+	</header>
+	<body>
+		<b>Let each players know the following link either through massanger or verbal</b>
+		<br>
+		<div>
+		Link for each players:<br>
+		<p href="localhost:8080/player"/>
+		</div>
+		<br>
+		<div class="button">
+			<button id="done" type="submit">Done</button>
+		</div>
+	<script>
+		const url = "localhost:8080/ready";
+		$('.btn').click(function() {
+			$.post(url, data, function(data, status) {
+				consol.log('data is ${data} and status is ${status}')
+			});
+		})
+	</script>
+	</body>
+</html>

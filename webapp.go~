@@ -1,0 +1,74 @@
+package main
+
+import (
+	"log"
+	"fmt"
+	"regexp"
+	"errors"
+	"net/http"
+	"io/ioutil"
+)
+
+type Page struct {
+    Title string
+    Body  []byte
+}
+
+var validPath = regexp.MustCompile("^/(|index|home|admin|player)/([a-zA-Z0-9]+)$")
+
+func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		return "index", nil
+	}
+	fmt.Println(m[2])
+	return m[2], nil // The title is the second subexpression.
+}
+
+func loadPage(title string) (*Page, error) {
+	filename := "html/" + title  + ".html"
+	body, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return &Page{Title: title, Body: body}, nil
+}
+
+func indexHandler(w http.ResponseWriter, r* http.Request) {
+	title, err :=  getTitle(w, r)
+	if err != nil {
+		http.Redirect(w, r, "/index", http.StatusFound)
+		return
+	}
+	if title == "" || title == "index.html" || title == "home" {
+		title = "index"
+	}
+	p, err := loadPage(title)
+	if err != nil {
+		http.Redirect(w, r, "/index", http.StatusFound)
+		return
+	}
+	fmt.Fprintf(w, "%s", p.Body)
+}
+
+func adminHandler(w http.ResponseWriter, r* http.Request) {
+	title := r.URL.Path[len("/admin"):]
+	p, _ := loadPage(title)
+	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
+}
+
+func playerHandler(w http.ResponseWriter, r* http.Request) {
+	title := r.URL.Path[len("/player"):]
+	p, _ := loadPage(title)
+	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
+}
+
+func main() {
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/index", indexHandler)
+	http.HandleFunc("/home", indexHandler)
+	http.HandleFunc("/admin/", adminHandler)
+	http.HandleFunc("/player/", playerHandler)
+	log.Fatalf("failed to listen http:", http.ListenAndServe(":8080", nil))
+
+}

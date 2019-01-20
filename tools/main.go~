@@ -1,0 +1,17 @@
+package main
+
+import (
+	"fmt"
+	"math/rand"
+)
+
+func randNumber(min, max int) int {
+	return rand.Intn(max-min) + min
+}
+
+func main() {
+	for {
+		x := randNumber(0, 20)
+		fmt.Println("range 0-20:", x)
+	}
+}
