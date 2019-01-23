@@ -2,13 +2,14 @@ syntax = "proto3"
 
 package game;
 
-import
+import "google/protobuf/timestamp.proto";
 
-option
+option packed = true;
 
 message StartSessionRequest {
 	string gameName = 1;
 	string secretPhrase = 2;
+	google.protobuf.Timestamp started_at = 3;
 }
 
 message StartSessionResponse {
@@ -79,6 +80,7 @@ message StopSessionRequest {
 message StopSessionResponse {
 	string sessionId = 1;
 	bool status = 2;
+	google.protobuf.Timestamp stopped_at = 3;
 }
 
 message WinnersResponse {
