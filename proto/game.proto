@@ -1,10 +1,10 @@
-syntax = "proto3"
+syntax = "proto3";
 
 package game;
 
 import "google/protobuf/timestamp.proto";
 
-option packed = true;
+// option packed = true;
 
 message StartSessionRequest {
 	string gameName = 1;
@@ -36,12 +36,22 @@ message AddPlayerResponse {
 	repeated int32 sheet = 2;
 }
 
-message PlayersList {
+message PlayersListRequest {
+	string sessionId = 1;
+}
+
+message PlayersListResponse {
 	repeated string players = 1;
 }
 
 message EnablePlayerRequest {
+	string sessionId = 1;
+	string playerName = 2;
+}
+
+message EnablePlayerResponse {
 	string playerName = 1;
+	bool playerEnabled = 2;
 }
 
 enum RulesType {
@@ -55,18 +65,29 @@ enum RulesType {
 	FULL_HOUSE            = 7;
 }
 
-message EnablePlayerResponse {
-	string playerName = 1;
-	bool playerEnabled = 2;
-}
-
 message RulesListRequest {
 	string sessionId = 1;
 	repeated RulesType rules = 2;
 }
 
+message RulesListResponse {
+	bool status = 1;
+}
+
+message DrawNumberRequest {
+	string sesssionId = 1;
+}
+
 message DrawNumberResponse {
 	int32 number = 1;
+}
+
+message AttachRequest {
+	string sesssionId = 1;
+}
+
+message DrawnNumbersListRequest {
+	string sesssionId = 1;
 }
 
 message DrawnNumbersResponse {
@@ -83,7 +104,11 @@ message StopSessionResponse {
 	google.protobuf.Timestamp stopped_at = 3;
 }
 
-message WinnersResponse {
+message AnnounceWinnersRequest {
+	string sessionId = 1;
+}
+
+message AnnounceWinnersResponse {
 	string sessionId = 1;
 	string player = 2;
 }
@@ -92,12 +117,12 @@ service Game {
 	rpc StartNewGame(StartSessionRequest) returns (StartSessionResponse) {}
 	rpc GetGameLink(GetSessionRequest) returns (GetSessionResponse) {}
 	rpc AddAPlayer(AddPlayerRequest) returns (AddPlayerResponse) {}
-	rpc ListPlayers() returns (PlayersList) {}
-	rpc EnablePlayer(EnablePlayerRequest) returns (EnabledPlayerReponse) {}
-	rpc ApplyRules(RulesListRequest) returns (RulesListReponse) {}
-	rpc DrawANumber() returns (DrawNumberResponse) {}
-	rpc AttachToDraw() returns (stream DrawNumberResponse) {}
-	rpc DrawNumbersList() returns (DrawnNumbersResponse) {}
-	rpc AnnounceWinners() returns (stream WinnersResponse) {}
+	rpc ListPlayers(PlayersListRequest) returns (PlayersListResponse) {}
+	rpc EnablePlayer(EnablePlayerRequest) returns (EnablePlayerResponse) {}
+	rpc ApplyRules(RulesListRequest) returns (RulesListResponse) {}
+	rpc DrawANumber(DrawNumberRequest) returns (DrawNumberResponse) {}
+	rpc AttachToDraws(AttachRequest) returns (stream DrawNumberResponse) {}
+	rpc DrawnNumbersList(DrawnNumbersListRequest) returns (DrawnNumbersResponse) {}
+	rpc AnnounceWinners(AnnounceWinnersRequest) returns (stream AnnounceWinnersResponse) {}
 	rpc StopGame(StopSessionRequest) returns (StopSessionResponse) {}
 }
