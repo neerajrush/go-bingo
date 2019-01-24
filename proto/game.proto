@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package game;
+package proto;
 
 import "google/protobuf/timestamp.proto";
 
