@@ -2,14 +2,14 @@ syntax = "proto3";
 
 package proto;
 
-import "google/protobuf/timestamp.proto";
+// import "github.com/protobuf/protobuf/google/protobuf/timestamp.proto";
 
 // option packed = true;
 
 message StartSessionRequest {
 	string gameName = 1;
 	string secretPhrase = 2;
-	google.protobuf.Timestamp started_at = 3;
+	//google.protobuf.Timestamp started_at = 3;
 }
 
 message StartSessionResponse {
@@ -33,7 +33,10 @@ message AddPlayerRequest {
 
 message AddPlayerResponse {
 	int32 sheetSize = 1;
-	repeated int32 sheet = 2;
+	message Columns {
+		repeated int32 cols = 1;
+	}
+	repeated Columns sheet = 2;
 }
 
 message PlayersListRequest {
@@ -75,7 +78,7 @@ message RulesListResponse {
 }
 
 message DrawNumberRequest {
-	string sesssionId = 1;
+	string sessionId = 1;
 }
 
 message DrawNumberResponse {
@@ -83,11 +86,11 @@ message DrawNumberResponse {
 }
 
 message AttachRequest {
-	string sesssionId = 1;
+	string sessionId = 1;
 }
 
 message DrawnNumbersListRequest {
-	string sesssionId = 1;
+	string sessionId = 1;
 }
 
 message DrawnNumbersResponse {
@@ -101,7 +104,7 @@ message StopSessionRequest {
 message StopSessionResponse {
 	string sessionId = 1;
 	bool status = 2;
-	google.protobuf.Timestamp stopped_at = 3;
+	//google.protobuf.Timestamp stopped_at = 3;
 }
 
 message AnnounceWinnersRequest {

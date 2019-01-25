@@ -8,4 +8,4 @@ clean:
 
 game.pb.go: game.proto
 	@echo "Compiling file $< to generate: $@"
-	protoc -I../../../protobuf/protobuf -I. $< --go_out=plugins=grpc:.
+	protoc -I../../../.. -I. $< --go_out=plugins=grpc:.
