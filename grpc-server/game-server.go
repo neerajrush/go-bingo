@@ -24,8 +24,8 @@ type BingoServer struct {
 }
 
 func (b *BingoServer) StartNewGame(ctx context.Context, in *pb.StartSessionRequest) (*pb.StartSessionResponse, error) {
-	b.sessionId = in.GameName + in.SecretPhrase
-	log.Printf("SessionId: %v:", b.sessionId)
+	b.sessionId = in.GetGameName() + "-" + in.GetSecretPhrase()
+	log.Printf("SessionId: %v", b.sessionId)
 	return &pb.StartSessionResponse{SessionId: b.sessionId}, nil
 }
 
