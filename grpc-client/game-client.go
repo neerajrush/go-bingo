@@ -7,6 +7,7 @@ import (
 	"context"
 	"bufio"
 	"os"
+	"strconv"
 	"google.golang.org/grpc"
 
 	pb "github.com/neerajrush/go-bingo/proto"
@@ -97,17 +98,140 @@ func addPlayer(ctx context.Context, client pb.GameClient, sessionId string) [][]
 	return sheet
 }
 
+func listPlayers(ctx context.Context, client pb.GameClient, sessionId string)[]string {
+	listPlayersResp, err := client.ListPlayers(context.Background(),
+	                               &pb.PlayersListRequest{SessionId: sessionId,
+		                       })
+	if err != nil {
+		log.Fatalf("failed to list all players for session: %v", err)
+	}
+
+	fmt.Println("Successfully pulled list of players for sessionId:", sessionId)
+
+	playersList := listPlayersResp.GetPlayers()
+
+	fmt.Println("ListSize:", len(playersList))
+
+	return playersList
+}
+
+func enablePlayer(ctx context.Context, client pb.GameClient, sessionId string) {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("Enter PlayerName to enable:")
+	scanner.Scan()
+	playerName := scanner.Text()
+	if err := scanner.Err(); err != nil {
+		log.Println(err)
+	}
+	enablePlayerResp, err := client.EnablePlayer(context.Background(),
+	                               &pb.EnablePlayerRequest{SessionId: sessionId,
+		                       })
+	if err != nil {
+		log.Fatalf("failed to enable the player(%v) for session: %v", playerName, err)
+	}
+
+	fmt.Println("Successfully enabled the player (", playerName, ") for sessionId:", sessionId)
+
+	fmt.Println("Enabled:", enablePlayerResp.GetPlayerEnabled())
+}
+
+func applyRules(ctx context.Context, client pb.GameClient, sessionId string) {
+	rules := make([]pb.RulesType, 0)
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("The Game Rules are:")
+	for {
+		fmt.Println("1: Single Row Match")
+		fmt.Println("2: Single Col Match")
+		fmt.Println("3: Single Diagonal Match")
+		fmt.Println("4: Two Rows Match")
+		fmt.Println("5: Two Cols Match")
+		fmt.Println("6: Two Diagonal Match")
+		fmt.Println("7: Full House")
+		fmt.Println("0: Quit")
+		fmt.Print("Enter Rules to enable:")
+		scanner.Scan()
+		ruleNo := scanner.Text()
+		if err := scanner.Err(); err != nil {
+			log.Println(err)
+		}
+		ruleNoInt, err := strconv.Atoi(ruleNo)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if ruleNoInt < 0 && ruleNoInt > 7 {
+			log.Println("Invalid selection (choose again)")
+			continue
+		}
+		if ruleNoInt == 0 {
+			break
+		}
+		rules = append(rules, pb.RulesType(ruleNoInt))
+	}
+
+	if len(rules) == 0 {
+		return
+	}
+
+	rulesListResp, err := client.ApplyRules(context.Background(),
+					&pb.RulesListRequest{SessionId: sessionId,
+							     Rules: rules,
+					})
+	if err != nil {
+		log.Fatalf("failed to apply the rules list for session: %v", err)
+	}
+
+	fmt.Println("Successfully applied the rules to sessionId:", sessionId)
+	fmt.Println("Status:", rulesListResp.GetStatus())
+}
+
+func drawANumber(ctx context.Context, client pb.GameClient, sessionId string) {
+	drawNumberResp, err := client.DrawANumber(context.Background(),
+	                               &pb.DrawNumberRequest{SessionId: sessionId,
+		                       })
+	if err != nil {
+		log.Fatalf("failed to draw a number for session: %v", err)
+	}
+
+	fmt.Println("Successfully drawn a number for sessionId:", sessionId)
+
+	fmt.Println("DrawnNumber:", drawNumberResp.GetNumber())
+}
+
+func drawnNumbersList(ctx context.Context, client pb.GameClient, sessionId string) {
+	drawnNumbersResp, err := client.DrawnNumbersList(context.Background(),
+	                               &pb.DrawnNumbersListRequest{SessionId: sessionId,
+		                       })
+	if err != nil {
+		log.Fatalf("failed to pull drawn numbers list for session: %v", err)
+	}
+
+	fmt.Println("Successfully pulled drawn numbers list for sessionId:", sessionId)
+
+	dnList := drawnNumbersResp.GetNumbers()
+
+	fmt.Println("DrawnNumbersList(size):", len(dnList))
+	fmt.Println("List:", dnList)
+}
+
 /*
-	AddAPlayer(ctx context.Context, in *AddPlayerRequest, opts ...grpc.CallOption) (*AddPlayerResponse, error)
-	ListPlayers(ctx context.Context, in *PlayersListRequest, opts ...grpc.CallOption) (*PlayersListResponse, error)
-	EnablePlayer(ctx context.Context, in *EnablePlayerRequest, opts ...grpc.CallOption) (*EnablePlayerResponse, error)
-	ApplyRules(ctx context.Context, in *RulesListRequest, opts ...grpc.CallOption) (*RulesListResponse, error)
-	DrawANumber(ctx context.Context, in *DrawNumberRequest, opts ...grpc.CallOption) (*DrawNumberResponse, error)
-	AttachToDraws(ctx context.Context, in *AttachRequest, opts ...grpc.CallOption) (Game_AttachToDrawsClient, error)
-	DrawnNumbersList(ctx context.Context, in *DrawnNumbersListRequest, opts ...grpc.CallOption) (*DrawnNumbersResponse, error)
-	AnnounceWinners(ctx context.Context, in *AnnounceWinnersRequest, opts ...grpc.CallOption) (Game_AnnounceWinnersClient, error)
-	StopGame(ctx context.Context, in *StopSessionRequest, opts ...grpc.CallOption) (*StopSessionResponse, error)
-	*/
+AttachToDraws(ctx context.Context, in *AttachRequest, opts ...grpc.CallOption) (Game_AttachToDrawsClient, error)
+AnnounceWinners(ctx context.Context, in *AnnounceWinnersRequest, opts ...grpc.CallOption) (Game_AnnounceWinnersClient, error)
+*/
+
+func stopGame(ctx context.Context, client pb.GameClient, sessionId string) {
+	stopGameResp, err := client.StopGame(context.Background(),
+	                               &pb.StopSessionRequest{SessionId: sessionId,
+		                       })
+	if err != nil {
+		log.Fatalf("failed to stop the game for session: %v", err)
+	}
+
+	fmt.Println("Successfully stopped the game for sessionId:", sessionId)
+
+	fmt.Println("Status:", stopGameResp.GetStatus())
+}
+
 
 func main() {
 	flag.Parse()
@@ -128,6 +252,19 @@ func main() {
 
 	sheet := addPlayer(context.Background(), client, startSessionResp.GetSessionId())
 	log.Println(sheet)
+
+	playersList := listPlayers(context.Background(), client, startSessionResp.GetSessionId())
+	log.Println(playersList)
+
+	enablePlayer(context.Background(), client, startSessionResp.GetSessionId())
+
+	applyRules(context.Background(), client, startSessionResp.GetSessionId())
+
+	drawANumber(context.Background(), client, startSessionResp.GetSessionId())
+
+	drawnNumbersList(context.Background(), client, startSessionResp.GetSessionId())
+
+	stopGame(context.Background(), client, startSessionResp.GetSessionId())
 
 	defer conn.Close()
 }
