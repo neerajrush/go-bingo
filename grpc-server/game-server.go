@@ -111,13 +111,12 @@ func (b *BingoServer) AttachToDraws(in *pb.AttachRequest, stream pb.Game_AttachT
 func (b *BingoServer) DrawnNumbersList(ctx context.Context, in *pb.DrawnNumbersListRequest) (*pb.DrawnNumbersResponse, error) {
 	log.Printf("SessionId: %v", in.GetSessionId())
 	if in.GetSessionId() == b.sessionId {
-		dnList := make([]int32, 0)
 		rand.Seed(time.Now().Unix() + 99999)
 		for i := 0; i < 10; i++ {
 			aNo := rand.Intn(100)
-			dnList = append(dnList, int32(aNo))
+			b.drawnNumbers = append(b.drawnNumbers, int32(aNo))
 		}
-		return &pb.DrawnNumbersResponse{Numbers: dnList,}, nil
+		return &pb.DrawnNumbersResponse{Numbers: b.drawnNumbers,}, nil
     	}
 	return nil, ErrSessionNotActive
 }

@@ -7,7 +7,9 @@ import (
 	"context"
 	"bufio"
 	"os"
+	"io"
 	"strconv"
+	"sync"
 	"google.golang.org/grpc"
 
 	pb "github.com/neerajrush/go-bingo/proto"
@@ -214,6 +216,35 @@ func drawnNumbersList(ctx context.Context, client pb.GameClient, sessionId strin
 	fmt.Println("List:", dnList)
 }
 
+var wg sync.WaitGroup
+
+func attachToDraws(ctx context.Context, client pb.GameClient, sessionId string) {
+	stream, err := client.AttachToDraws(context.Background(),
+	                                     &pb.AttachRequest{SessionId: sessionId,
+		                         })
+	if err != nil {
+		log.Fatalf("failed to attach to stream of drawn numbers for session: %v", err)
+	}
+
+	fmt.Println("Successfully attached to stream of drawn numbers for sessionId:", sessionId)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Println("Receiving stream of draws...")
+		for {
+			drawNumberResp, err := stream.Recv()
+			if err == io.EOF {
+				fmt.Println("Received EOF...")
+				break
+			}
+			if err != nil {
+				log.Fatalf("%v.AttachToDrawss(_) = _, %v", client, err)
+			}
+			fmt.Println("Received(Drawn Number):", drawNumberResp.GetNumber())
+		}
+	}()
+}
+
 /*
 AttachToDraws(ctx context.Context, in *AttachRequest, opts ...grpc.CallOption) (Game_AttachToDrawsClient, error)
 AnnounceWinners(ctx context.Context, in *AnnounceWinnersRequest, opts ...grpc.CallOption) (Game_AnnounceWinnersClient, error)
@@ -264,7 +295,11 @@ func main() {
 
 	drawnNumbersList(context.Background(), client, startSessionResp.GetSessionId())
 
+	attachToDraws(context.Background(), client, startSessionResp.GetSessionId())
+
 	stopGame(context.Background(), client, startSessionResp.GetSessionId())
+
+	wg.Wait()
 
 	defer conn.Close()
 }
