@@ -97,13 +97,14 @@ func (b *BingoServer) DrawANumber(ctx context.Context, in *pb.DrawNumberRequest)
 
 func (b *BingoServer) AttachToDraws(in *pb.AttachRequest, stream pb.Game_AttachToDrawsServer) error {
 	log.Printf("SessionId: %v", in.GetSessionId())
-	if in.GetSessionId() == b.sessionId {
+	if in.GetSessionId() != b.sessionId {
 		return nil
     	}
+	log.Println("About to stream all drawnNumbers..", b.drawnNumbers)
 	for _, draw := range b.drawnNumbers {
 		if err := stream.Send(&pb.DrawNumberResponse{Number: draw, }); err != nil {
-	        return err
-            }
+	        	return err
+            	}
         }
 	return nil
 }
@@ -123,14 +124,22 @@ func (b *BingoServer) DrawnNumbersList(ctx context.Context, in *pb.DrawnNumbersL
 
 func (b *BingoServer) AnnounceWinners(in *pb.AnnounceWinnersRequest, stream pb.Game_AnnounceWinnersServer) error {
 	log.Printf("SessionId: %v", in.GetSessionId())
-	if in.GetSessionId() == b.sessionId {
+	if in.GetSessionId() != b.sessionId {
 		return nil
     	}
+	if len(b.winners) == 0 && len(b.players) > 0 {
+		b.winners = append(b.winners, b.players[0])
+	}
+	if len(b.winners) == 1 && len(b.players) > 1 {
+		b.winners = append(b.winners, b.players[1])
+	}
+	log.Println("Winners are:", b.winners)
 	for _, winner := range b.winners {
 		if err := stream.Send(&pb.AnnounceWinnersResponse{ SessionId: b.sessionId, Player: winner, }); err != nil {
-	        return err
-            }
+	        	return err
+                }
         }
+	fmt.Println("winners(size):", len(b.winners))
         return nil
 }
 

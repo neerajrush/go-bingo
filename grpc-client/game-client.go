@@ -245,10 +245,32 @@ func attachToDraws(ctx context.Context, client pb.GameClient, sessionId string) 
 	}()
 }
 
-/*
-AttachToDraws(ctx context.Context, in *AttachRequest, opts ...grpc.CallOption) (Game_AttachToDrawsClient, error)
-AnnounceWinners(ctx context.Context, in *AnnounceWinnersRequest, opts ...grpc.CallOption) (Game_AnnounceWinnersClient, error)
-*/
+func announceWinners(ctx context.Context, client pb.GameClient, sessionId string) {
+	stream, err := client.AnnounceWinners(context.Background(),
+	                                     &pb.AnnounceWinnersRequest{SessionId: sessionId,
+		                         })
+	if err != nil {
+		log.Fatalf("failed to attach to stream of announce winners for session: %v", err)
+	}
+
+	fmt.Println("Successfully attached to stream of announce winners for sessionId:", sessionId)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Println("Receiving stream of winners...")
+		for {
+			announceWinnersResp, err := stream.Recv()
+			if err == io.EOF {
+				fmt.Println("Received EOF...")
+				break
+			}
+			if err != nil {
+				log.Fatalf("%v.AnnounceWinners(_) = _, %v", client, err)
+			}
+			fmt.Println("Received(Winner):", announceWinnersResp.GetPlayer())
+		}
+	}()
+}
 
 func stopGame(ctx context.Context, client pb.GameClient, sessionId string) {
 	stopGameResp, err := client.StopGame(context.Background(),
@@ -297,9 +319,11 @@ func main() {
 
 	attachToDraws(context.Background(), client, startSessionResp.GetSessionId())
 
-	stopGame(context.Background(), client, startSessionResp.GetSessionId())
+	announceWinners(context.Background(), client, startSessionResp.GetSessionId())
 
 	wg.Wait()
+
+	stopGame(context.Background(), client, startSessionResp.GetSessionId())
 
 	defer conn.Close()
 }
