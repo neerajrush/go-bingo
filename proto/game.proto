@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package proto;
+
+// import "github.com/protobuf/protobuf/google/protobuf/timestamp.proto";
+
+// option packed = true;
+
+message StartSessionRequest {
+	string gameName = 1;
+	string secretPhrase = 2;
+	//google.protobuf.Timestamp started_at = 3;
+}
+
+message StartSessionResponse {
+	string sessionId = 1;
+	string gameLink = 2;
+}
+
+message GetSessionRequest {
+	string sessionId = 1;
+}
+
+message GetSessionResponse {
+	string sessionId = 1;
+	string gameLink = 2;
+}
+
+message AddPlayerRequest {
+	string sessionId = 1;
+	string name = 2;
+}
+
+message AddPlayerResponse {
+	int32 sheetSize = 1;
+	message Columns {
+		repeated int32 cols = 1;
+	}
+	repeated Columns sheet = 2;
+}
+
+message PlayersListRequest {
+	string sessionId = 1;
+}
+
+message PlayersListResponse {
+	repeated string players = 1;
+}
+
+message EnablePlayerRequest {
+	string sessionId = 1;
+	string playerName = 2;
+}
+
+message EnablePlayerResponse {
+	string playerName = 1;
+	bool playerEnabled = 2;
+}
+
+enum RulesType {
+	NONE_MATCH            = 0;
+	SINGLE_ROW_MATCH      = 1;
+	SINGLE_COL_MATCH      = 2;
+	SINGLE_DIAGONAL_MATCH = 3;
+	TWO_ROWS_MATCH        = 4;
+	TWO_COLS_MATCH        = 5;
+	TWO_DIAGONAL_MATCH    = 6;
+	FULL_HOUSE            = 7;
+}
+
+message RulesListRequest {
+	string sessionId = 1;
+	repeated RulesType rules = 2;
+}
+
+message RulesListResponse {
+	bool status = 1;
+}
+
+message DrawNumberRequest {
+	string sessionId = 1;
+}
+
+message DrawNumberResponse {
+	int32 number = 1;
+}
+
+message AttachRequest {
+	string sessionId = 1;
+}
+
+message DrawnNumbersListRequest {
+	string sessionId = 1;
+}
+
+message DrawnNumbersResponse {
+	repeated int32 numbers = 1;
+}
+
+message StopSessionRequest {
+	string sessionId = 1;
+}
+
+message StopSessionResponse {
+	string sessionId = 1;
+	bool status = 2;
+	//google.protobuf.Timestamp stopped_at = 3;
+}
+
+message AnnounceWinnersRequest {
+	string sessionId = 1;
+}
+
+message AnnounceWinnersResponse {
+	string sessionId = 1;
+	string player = 2;
+}
+
+service Game {
+	rpc StartNewGame(StartSessionRequest) returns (StartSessionResponse) {}
+	rpc GetGameLink(GetSessionRequest) returns (GetSessionResponse) {}
+	rpc AddAPlayer(AddPlayerRequest) returns (AddPlayerResponse) {}
+	rpc ListPlayers(PlayersListRequest) returns (PlayersListResponse) {}
+	rpc EnablePlayer(EnablePlayerRequest) returns (EnablePlayerResponse) {}
+	rpc ApplyRules(RulesListRequest) returns (RulesListResponse) {}
+	rpc DrawANumber(DrawNumberRequest) returns (DrawNumberResponse) {}
+	rpc AttachToDraws(AttachRequest) returns (stream DrawNumberResponse) {}
+	rpc DrawnNumbersList(DrawnNumbersListRequest) returns (DrawnNumbersResponse) {}
+	rpc AnnounceWinners(AnnounceWinnersRequest) returns (stream AnnounceWinnersResponse) {}
+	rpc StopGame(StopSessionRequest) returns (StopSessionResponse) {}
+}
