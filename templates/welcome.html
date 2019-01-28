@@ -1,0 +1,227 @@
+<html>
+
+<head>
+<title> Tambola: Intro page</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="static/bootstrap.min.css" rel="stylesheet", media="screen">
+<style type="text/css">
+h1 {
+text-align: center;
+color: purple;
+font-style: oblique;
+font-size: 70px;
+}
+
+div.h3 {
+text-align: right;
+color: blue;
+font-style: italic;
+type: h3;
+}
+
+div.h4 {
+text-align: right;
+type: h4;
+}
+
+div.img {
+float: left;
+border-right: 50pt;
+}
+
+div.draw {
+float: left;
+background-color: LightSteelBlue;
+border: 2px solid black;
+table-layout: fixed;
+table-position: center;
+width: 440px;
+height: 440px;
+margin: auto;
+text-align: center;
+}
+
+div.winning_table {
+float: right;
+background-color: plum;
+border: 2px solid black;
+table-layout: fixed;
+table-position: center;
+width: 440px;
+height: 440px;
+margin: auto;
+text-align: center;
+border-spacing: 2px;
+border-collapse: separate;
+border-color: black;
+}
+
+th, td { 
+text-align: center;
+font-size: 40px;
+border: 2px solid black;
+width: 85px;
+height: 60px;
+border-spacing: 2px;
+border-collapse: separate;
+border-color: black;
+}
+
+div.footer {
+float: left;
+table-layout: fixed;
+table-position: center;
+width: 100%;
+height: 1px;
+margin: auto;
+text-align: left;
+}
+
+.draw_number_button {
+display:block;
+min-width: 20px;
+width: 20px;
+padding:5px 10px;
+
+}
+
+div.winner_1_table {
+float: left;
+background-color: plum;
+border: 2px solid black;
+table-layout: fixed;
+table-position: center;
+width: 440px;
+height: 440px;
+margin: 40px;
+margin-top: 10px;
+text-align: center;
+border-spacing: 2px;
+border-collapse: separate;
+border-color: black;
+}
+
+div.winner_2_table{
+float: right;
+background-color: plum;
+border: 2px solid black;
+table-layout: fixed;
+table-position: center;
+width: 440px;
+height: 440px;
+margin: 40px;
+margin-top: 10px;
+text-align: center;
+border-spacing: 2px;
+border-collapse: separate;
+border-color: black;
+}
+
+div.winner_1_name {
+float: left;
+background-color: LightSteelBlue;
+border: 2px solid black;
+table-layout: fixed;
+table-position: center;
+width: 440px;
+margin-top: 30px;
+margin-left: 40px;
+text-align: center;
+}
+
+div.winner_2_name {
+float: right;
+background-color: LightSteelBlue;
+border: 2px solid black;
+table-layout: fixed;
+table-position: center;
+width: 440px;
+margin-top: 30px;
+margin-right: 40px;
+text-align: center;
+}
+
+</style>
+</head>
+
+<body>
+<div class="container">
+   <h1>Welcome to Tambola Land</h1>
+   <hr/>
+   <h3 style="text-align: left;"><a href="/display_sheets">back</a></h3>
+   <div class="img"> <img src="static/NKS.png" style="max-height=80px; max-width: 80px"/> </div>
+   <div class="h4">Developed by:   ---- </div>
+   <div class="h3">Neeraj Sharma    </div>
+   <div class="h4"><a href="/logout">logout</a></div>
+
+   <hr/>
+
+   <div class="draw"> 
+      <caption><h2>LAST DRAW</h2></caption>
+        <h1 style="font-size: 250px" id="draw_number">	 
+        {% if drawn_number %}
+	   <p>{{ drawn_number }}</p>
+        {% endif %}
+        </h1>
+   </div>
+
+   <div class="winning_table"> 
+      {% if table %}
+         <caption><h4 style="font-size: 50px">Winning Sheet</h4></caption>
+         <p id="winning_table">{{ table }}</p>
+      {% endif %}
+   </div>
+
+    <div style="width:1200px; height:460px"> </div>
+
+    <hr>
+
+    <button id="draw_number_button" class="btn btn-lg btn-primary btn-block" type="button" style="width:440px">DRAW A NUMBER</button>
+    <div id="drawn_number" style="font-size: 15px; color: brown;">LAST DRAWN NUMBERS: {{ drawn_number }} </div>
+
+    <div style="width:1200px; height:30px"> </div>
+
+    <div class="winner_1_name">
+         <h3 style="font-size: 20px">
+         {% if winner_1_name %}
+         	<p id="winner_1_name">{{ winner_1_name }}</p>
+         {% endif %}
+         </h3>
+   </div>
+
+    <div class="winner_2_name">
+       <h3 style="font-size: 20px">
+       {% if winner_2_name %}
+         <p id="winner_2_name">{{ winner_2_name }}</p>
+       {% endif %}
+       </h3>
+   </div>
+
+   <div class="winner_1_table"> 
+      {% if winner_1_table %}
+         <caption><h4 style="font-size: 30px">Winner 1 (Two Columns Match)</h4></caption>
+         <p id="winner_1_table">{{ winner_1_table }}</p>
+      {% endif %}
+   </div>
+
+   <div class="winner_2_table"> 
+      {% if winner_2_table %}
+         <caption><h4 style="font-size: 30px">Winner 2 (Full House Match)</h4></caption>
+         <p id="winner_2_table">{{ winner_2_table }}</p>
+      {% endif %}
+   </div>
+
+    <script src="static/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="static/bootstrap.min.js"></script>
+    <script src="static/draw_a_number.js"></script>
+
+   <div class="footer">
+      {% for message in get_flashed_messages() %}
+      {{ message }}
+      {% endfor %}
+   </div>
+</div>
+</body>
+
+</html>
